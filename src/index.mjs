@@ -18,13 +18,13 @@ import cors from 'cors';
 import { fileURLToPath } from 'url';
 import SocketEvent from './config/Socket/SocketEvent.mjs';
 import Socket_Middleware from './config/Socket/SocketMiddleWare.mjs';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
-
-const whitelist = new Set([envConstant.FRONTEND_URL ,'http://localhost:5173']);
+const whitelist = new Set([envConstant.FRONTEND_URL, 'http://localhost:5173']);
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -51,7 +51,7 @@ app.use((req, res, next) => {
 });
 
 io.on('connection', (socket) => SocketEvent(socket));
-io.use((socket, next)=> Socket_Middleware(socket , next))
+io.use((socket, next) => Socket_Middleware(socket, next));
 
 app.use((err, req, res, next) => {
   if (err) {
@@ -60,4 +60,58 @@ app.use((err, req, res, next) => {
   }
 
   next();
+});
+
+// Define Swagger options
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Express API Documentation',
+      version: '1.0.0',
+      description:
+        'Automatically generated API documentation for Express routes',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+        description: 'Development server',
+      },
+    ],
+  },
+  apis: ['./src/routes/*.mjs'], // Path to the API routes
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Add Swagger UI route before app.listen
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Returns a list of users
+ *     description: Optional extended description
+ *     responses:
+ *       200:
+ *         description: A list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: The user ID.
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     description: The user's name.
+ *                     example: Leanne Graham
+ */
+app.get('/users', (req, res) => {
+  // Your route logic here
 });
