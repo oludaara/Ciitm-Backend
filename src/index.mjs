@@ -79,7 +79,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/routes/*.mjs'], // Path to the API routes
+  apis: [process.env.SWAGGER_API_DOCS_PATH || './src/routes/*.mjs'], // Path to the API routes
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -114,4 +114,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 app.get('/users', (req, res) => {
   // Your route logic here
+  // TODO: Implement logic to fetch and return a list of users
+  res.status(501).send('Not Implemented');
 });
