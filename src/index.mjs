@@ -79,41 +79,13 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: [process.env.SWAGGER_API_DOCS_PATH || './src/routes/*.mjs'], // Path to the API routes
+  apis: [
+    process.env.SWAGGER_API_DOCS_PATH || './src/routes/*.mjs',
+    './src/routes/*.js',
+  ], // Path to the API routes
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // Add Swagger UI route before app.listen
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-/**
- * @swagger
- * /users:
- *   get:
- *     summary: Returns a list of users
- *     description: Optional extended description
- *     responses:
- *       200:
- *         description: A list of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                     description: The user ID.
- *                     example: 1
- *                   name:
- *                     type: string
- *                     description: The user's name.
- *                     example: Leanne Graham
- */
-app.get('/users', (req, res) => {
-  // Your route logic here
-  // TODO: Implement logic to fetch and return a list of users
-  res.status(501).send('Not Implemented');
-});
