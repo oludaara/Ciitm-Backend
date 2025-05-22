@@ -1,4 +1,5 @@
 import express from 'express';
+import usersRouter from './users.mjs';
 const app = express();
 import { AuthRouter } from '../api/v1/Auth/Auth.routes.mjs';
 import { RoleRouter } from '../api/v1/Role/Role.routes.mjs';
@@ -20,8 +21,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-
-
 app.use(
   '/api',
   AuthRouter,
@@ -35,5 +34,8 @@ app.use(
   NoticeRouter,
   user
 );
+
+// Mount the users router
+app.use('/users', usersRouter);
 
 export default app;
