@@ -1,10 +1,9 @@
 import { 
   STUDENT_EVENTS, 
+  ERROR_MESSAGES, 
   MOCK_STUDENTS, 
-  COURSES, 
-  SEMESTERS, 
-  ERROR_MESSAGES 
-} from './student.constant.mjs';
+  COURSES 
+} from './Student.constant.mjs';  // Fixed capitalization
 
 /**
  * Set up WebSocket connection for student operations
@@ -15,7 +14,7 @@ export const setupStudentSocket = (io) => {
   const studentNamespace = io.of('/students');
 
   studentNamespace.on('connection', (socket) => {
-    console.log(`Client connected to student namespace: ${socket.id}`);
+    console.log(`Student WebSocket client connected: ${socket.id}`);
 
     // Handle get-students event
     socket.on(STUDENT_EVENTS.GET_STUDENTS, async (data) => {
@@ -117,8 +116,8 @@ export const setupStudentSocket = (io) => {
     });
 
     // Handle disconnect
-    socket.on('disconnect', (reason) => {
-      console.log(`Client disconnected from student namespace: ${socket.id}, reason: ${reason}`);
+    socket.on('disconnect', () => {
+      console.log(`Student WebSocket client disconnected: ${socket.id}`);
     });
 
     // Handle connection errors

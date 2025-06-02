@@ -252,4 +252,15 @@ export const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500
 };
 
-// Error messages
+/**
+ * Error messages for student module
+ * @constant
+ */
+export const ERROR_MESSAGES = {
+  MISSING_PARAMETERS: 'Course and semester parameters are required',
+  INVALID_COURSE: 'Invalid course code provided',
+  INVALID_SEMESTER: 'Invalid semester number provided',
+  NO_STUDENTS_FOUND: 'No students found for the specified course and semester',
+  STUDENT_NOT_FOUND: 'Student not found',
+  INTERNAL_SERVER_ERROR: 'An internal server error occurred'
+};

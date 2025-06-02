@@ -4,7 +4,7 @@ import {
   SEMESTERS, 
   HTTP_STATUS, 
   ERROR_MESSAGES 
-} from './student.constant.mjs';
+} from './Student.constant.mjs'; // Fixed capitalization from './student.constant.mjs'
 
 /**
  * Get students based on course and semester
