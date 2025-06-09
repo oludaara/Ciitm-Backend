@@ -1,9 +1,10 @@
-import { 
-  MOCK_STUDENTS, 
-  COURSES, 
-  SEMESTERS, 
-  HTTP_STATUS, 
-  ERROR_MESSAGES 
+import Admission from '../Admission/Admission.model.mjs';
+import SendResponse from '../../../utils/SendResponse.mjs';
+import {
+  COURSES,
+  SEMESTERS,
+  HTTP_STATUS,
+  ERROR_MESSAGES
 } from './Student.constant.mjs'; // Fixed capitalization from './student.constant.mjs'
 
 /**
@@ -17,56 +18,39 @@ export const getStudents = async (req, res) => {
 
     // Validate required parameters
     if (!course || !semester) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: ERROR_MESSAGES.MISSING_PARAMETERS,
-        data: null
-      });
+      throw new Error(ERROR_MESSAGES.MISSING_PARAMETERS);
     }
 
     // Validate course
     if (!Object.keys(COURSES).includes(course.toUpperCase())) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: ERROR_MESSAGES.INVALID_COURSE,
-        data: null,
-        availableCourses: Object.keys(COURSES)
-      });
+      throw new Error(ERROR_MESSAGES.INVALID_COURSE);
     }
 
     // Validate semester
     const semesterNum = parseInt(semester);
     if (!SEMESTERS.includes(semesterNum)) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: ERROR_MESSAGES.INVALID_SEMESTER,
-        data: null,
-        availableSemesters: SEMESTERS
-      });
+      throw new Error(ERROR_MESSAGES.INVALID_SEMESTER);
     }
 
-    // Get students from mock data
-    const courseStudents = MOCK_STUDENTS[course.toUpperCase()];
-    const students = courseStudents?.[semesterNum] || [];
+    // Fetch students from database
+    const students = await Admission.find({
+      'uniqueId': { $regex: `^CIITM_${course.toUpperCase()}_` },
+      'student': { $exists: true },
+      'admited': true,
+    }).lean();
 
-    if (students.length === 0) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        message: ERROR_MESSAGES.NO_STUDENTS_FOUND,
-        data: [],
-        meta: {
-          course: course.toUpperCase(),
-          semester: semesterNum,
-          count: 0
-        }
-      });
-    }
-
-    // Return successful response
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: `Successfully retrieved ${students.length} students`,
-      data: students,
+    if (!students || students.length === 0) {
+      throw new Error(ERROR_MESSAGES.NO_STUDENTS_FOUND);
+    }    // Return successful response
+    SendResponse.success(res, HTTP_STATUS.OK, `Successfully retrieved ${students.length} students`, {
+      students: students.map(s => ({
+        uniqueId: s.uniqueId,
+        student: s.student,
+        course: course.toUpperCase(),
+        semester: semesterNum,
+        fee: s.fee,
+        admited: s.admited
+      })),
       meta: {
         course: course.toUpperCase(),
         courseName: COURSES[course.toUpperCase()],
@@ -78,12 +62,7 @@ export const getStudents = async (req, res) => {
 
   } catch (error) {
     console.error('Error in getStudents controller:', error);
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: 'Internal server error occurred while fetching students',
-      data: null,
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    SendResponse.error(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
@@ -165,7 +144,7 @@ export const getStudentById = async (req, res) => {
 
     // Search for student across all courses and semesters
     let foundStudent = null;
-    
+
     for (const course of Object.keys(MOCK_STUDENTS)) {
       for (const semester of Object.keys(MOCK_STUDENTS[course])) {
         const student = MOCK_STUDENTS[course][semester].find(s => s.id === id);

@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   presets: [
     [
       '@babel/preset-env',
@@ -8,5 +8,8 @@ export default {
         },
       },
     ],
+    '@babel/preset-typescript',
   ],
+  plugins: ['@babel/plugin-transform-modules-commonjs'],
+  sourceType: 'unambiguous',
 };

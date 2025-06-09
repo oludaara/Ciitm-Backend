@@ -1,9 +1,10 @@
-import { 
-  STUDENT_EVENTS, 
-  ERROR_MESSAGES, 
-  MOCK_STUDENTS, 
-  COURSES 
+import {
+  STUDENT_EVENTS,
+  ERROR_MESSAGES,
+  COURSES
 } from './Student.constant.mjs';  // Fixed capitalization
+import Admission from '../Admission/Admission.model.mjs';
+import SendResponse from '../../../utils/SendResponse.mjs';
 
 /**
  * Set up WebSocket connection for student operations
@@ -19,67 +20,41 @@ export const setupStudentSocket = (io) => {
     // Handle get-students event
     socket.on(STUDENT_EVENTS.GET_STUDENTS, async (data) => {
       try {
-        console.log(`Received ${STUDENT_EVENTS.GET_STUDENTS} event:`, data);
-        
         const { course, semester, requestId } = data;
-
-        // Validate input data
         if (!course || !semester) {
-          socket.emit(STUDENT_EVENTS.STUDENT_ERROR, {
-            error: ERROR_MESSAGES.MISSING_PARAMETERS,
-            requestId,
-            timestamp: new Date().toISOString()
-          });
-          return;
+          throw new Error(ERROR_MESSAGES.MISSING_PARAMETERS);
         }
-
-        // Validate course
         if (!Object.keys(COURSES).includes(course.toUpperCase())) {
-          socket.emit(STUDENT_EVENTS.STUDENT_ERROR, {
-            error: ERROR_MESSAGES.INVALID_COURSE,
-            availableCourses: Object.keys(COURSES),
-            requestId,
-            timestamp: new Date().toISOString()
-          });
-          return;
+          throw new Error(ERROR_MESSAGES.INVALID_COURSE);
         }
-
-        // Validate semester
         const semesterNum = parseInt(semester);
         if (!SEMESTERS.includes(semesterNum)) {
-          socket.emit(STUDENT_EVENTS.STUDENT_ERROR, {
-            error: ERROR_MESSAGES.INVALID_SEMESTER,
-            availableSemesters: SEMESTERS,
-            requestId,
-            timestamp: new Date().toISOString()
-          });
-          return;
+          throw new Error(ERROR_MESSAGES.INVALID_SEMESTER);
         }
-
-        // Get students from mock data
-        const courseStudents = MOCK_STUDENTS[course.toUpperCase()];
-        const students = courseStudents?.[semesterNum] || [];
-
-        // Simulate real-time data processing delay
-        setTimeout(() => {
-          socket.emit(STUDENT_EVENTS.STUDENTS_DATA, {
-            success: true,
-            data: students,
-            meta: {
-              course: course.toUpperCase(),
-              courseName: COURSES[course.toUpperCase()],
-              semester: semesterNum,
-              count: students.length,
-              timestamp: new Date().toISOString(),
-              requestId
-            }
-          });
-        }, 100); // Small delay to simulate processing
-
+        // Fetch students from database
+        const students = await Admission.find({
+          'uniqueId': { $regex: `^CIITM_${course.toUpperCase()}_` },
+          'student': { $exists: true },
+          'admited': true,
+        }).lean();
+        if (!students || students.length === 0) {
+          throw new Error(ERROR_MESSAGES.NO_STUDENTS_FOUND);
+        }
+        socket.emit(STUDENT_EVENTS.STUDENTS_DATA, {
+          success: true,
+          data: students,
+          meta: {
+            course: course.toUpperCase(),
+            courseName: COURSES[course.toUpperCase()],
+            semester: semesterNum,
+            count: students.length,
+            timestamp: new Date().toISOString(),
+            requestId
+          }
+        });
       } catch (error) {
-        console.error('Error handling get-students event:', error);
         socket.emit(STUDENT_EVENTS.STUDENT_ERROR, {
-          error: 'Internal server error occurred while fetching students',
+          error: error.message,
           requestId: data?.requestId,
           timestamp: new Date().toISOString(),
           details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -93,7 +68,7 @@ export const setupStudentSocket = (io) => {
       const roomName = `${course}_${semester}`;
       socket.join(roomName);
       console.log(`Client ${socket.id} subscribed to ${roomName}`);
-      
+
       socket.emit('subscription-confirmed', {
         room: roomName,
         message: `Successfully subscribed to ${COURSES[course]} - Semester ${semester}`,
@@ -107,7 +82,7 @@ export const setupStudentSocket = (io) => {
       const roomName = `${course}_${semester}`;
       socket.leave(roomName);
       console.log(`Client ${socket.id} unsubscribed from ${roomName}`);
-      
+
       socket.emit('unsubscription-confirmed', {
         room: roomName,
         message: `Successfully unsubscribed from ${COURSES[course]} - Semester ${semester}`,
@@ -150,14 +125,14 @@ export const setupStudentSocket = (io) => {
  */
 export const broadcastStudentUpdate = (studentNamespace, course, semester, updateData) => {
   const roomName = `${course}_${semester}`;
-  
+
   studentNamespace.to(roomName).emit('student-update', {
     ...updateData,
     course,
     semester,
     timestamp: new Date().toISOString()
   });
-  
+
   console.log(`Broadcasted student update to room: ${roomName}`);
 };
 
